@@ -1,15 +1,15 @@
 #include <Adafruit_Fingerprint.h>
 #include <Servo.h>
-#include "peaches.h"
+#include "pitches.h"
 #define SENSOR_TX_PIN 4
 #define SENSOR_RX_PIN 3
 #define SENSOR_TOUCH_PIN 2
 #define RED_LED_PIN 9
 #define GREEN_LED_PIN 8
 #define BUZZ_PIN 10
-#define BUZZ_PIN_2 11
 #define MOTOR_PIN 7
 #define SERIAL_SPEED 9600
+#define POT_PIN A0
  
 SoftwareSerial sensorSerial(SENSOR_TX_PIN, SENSOR_RX_PIN);
 Adafruit_Fingerprint finger = Adafruit_Fingerprint(&sensorSerial);
@@ -17,22 +17,16 @@ Adafruit_Fingerprint finger = Adafruit_Fingerprint(&sensorSerial);
 int greenLed = LOW;
 Servo motor;
 
-// notes in the melody:
-int melody[] = {
-  NOTE_C4, NOTE_G3, NOTE_G3, NOTE_A3, NOTE_G3, 0, NOTE_B3, NOTE_C4
-};
-
-// note durations: 4 = quarter note, 8 = eighth note, etc.:
-int noteDurations[] = {
-  4, 8, 8, 4, 4, 4, 4, 4
-};
+unsigned long startTime;  // Tempo di inizio
+unsigned long elapsedTime; // Tempo trascorso in millisecondi
+const unsigned long duration = 20000; // Durata desiderata in millisecondi (20 secondi)
+unsigned long lastPrintTime;  // Ultimo momento in cui è stato stampato il tempo
 
 void setup() {
   pinMode(SENSOR_TOUCH_PIN, INPUT);
   pinMode(RED_LED_PIN, OUTPUT);
   pinMode(GREEN_LED_PIN, OUTPUT);
   pinMode(BUZZ_PIN, OUTPUT);
-  pinMode(BUZZ_PIN_2, OUTPUT);
   motor.attach(MOTOR_PIN);
   Serial.begin(SERIAL_SPEED);
   delay(1000);
@@ -101,25 +95,28 @@ void loop() {
   
     greenLed = !greenLed;
     digitalWrite(GREEN_LED_PIN, HIGH);
-    // iterate over the notes of the melody:
-  for (int thisNote = 0; thisNote < 8; thisNote++) {
-
-    // to calculate the note duration, take one second divided by the note type.
-    //e.g. quarter note = 1000 / 4, eighth note = 1000/8, etc.
-    int noteDuration = 1000 / noteDurations[thisNote];
-    tone(8, melody[thisNote], noteDuration);
-
-    // to distinguish the notes, set a minimum time between them.
-    // the note's duration + 30% seems to work well:
-    int pauseBetweenNotes = noteDuration * 1.30;
-    delay(pauseBetweenNotes);
-    // stop the tone playing:
-    noTone(8);
-  }
+    playSuccessSound();
     delay(100);
     digitalWrite(GREEN_LED_PIN, LOW);
     delay(100);
-    analogWrite(MOTOR_PIN, 128);
+    Serial.println("Hai a disposizione 20 secondi");
+    startTime = millis(); // Imposta il tempo di inizio
+    lastPrintTime = millis();   // Imposta l'ultimo momento di stampa
+    while(elapsedTime < duration) {
+      int val = analogRead(POT_PIN); 
+      val = map(val, 0, 1023, 0, 179); // mappo il valore letto dal pot. nell’intervallo 0-179 gradi
+      motor.write(val);
+      elapsedTime = millis() - startTime; // Calcola il tempo trascorso
+      unsigned long currentTime = millis(); // Ottieni il tempo corrente
+      if (currentTime - lastPrintTime >= 1000) {
+        Serial.print("Tempo trascorso: ");
+        Serial.print(elapsedTime / 1000); // Converte in secondi
+        Serial.println(" secondi");
+        lastPrintTime = currentTime; // Aggiorna l'ultimo momento di stampa
+      }    
+    }
+    Serial.println("Tempo scaduto!");
+    return;
   }
 }
 
@@ -221,11 +218,24 @@ uint8_t scanFingerprint(uint8_t slot) {
   return finger.image2Tz(slot);
 }
 
+void playErrorSound() {
+  // Genera il suono di errore
+  tone(BUZZ_PIN, NOTE_A1, 200); // Genera un suono a 1000Hz per 200ms (0,2 secondi)
+  delay(250); // Pausa di 500ms (0,5 secondi) tra i suoni
+  tone(BUZZ_PIN, NOTE_A1, 200);
+  delay(500);
+}
+
+void playSuccessSound() {
+  // Genera il suono di errore
+  tone(BUZZ_PIN, NOTE_G4, 500); // Genera un suono a 1000Hz per 200ms (0,2 secondi)
+  delay(250); // Pausa di 500ms (0,5 secondi) tra i suoni
+}
+
 void error() {
   Serial.println("Impronta non riconosciuta");
-  tone(BUZZ_PIN_2, 1000); // Suono con freq. 1KHz
-  delay(1000); // Pausa (1 sec.)
-  noTone(BUZZ_PIN_2); // Stop
+  
+  playErrorSound();
   for (int i = 0; i < 3; i++) {
     digitalWrite(RED_LED_PIN, HIGH);
     delay(100);
@@ -235,4 +245,5 @@ void error() {
   while (digitalRead(SENSOR_TOUCH_PIN));
   delay(200);
 }
+
   
