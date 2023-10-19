@@ -9,7 +9,6 @@
 #define BUZZ_PIN 10
 #define MOTOR_PIN 7
 #define SERIAL_SPEED 9600
-#define POT_PIN A0
  
 SoftwareSerial sensorSerial(SENSOR_TX_PIN, SENSOR_RX_PIN);
 Adafruit_Fingerprint finger = Adafruit_Fingerprint(&sensorSerial);
@@ -102,10 +101,8 @@ void loop() {
     Serial.println("Hai a disposizione 20 secondi");
     startTime = millis(); // Imposta il tempo di inizio
     lastPrintTime = millis();   // Imposta l'ultimo momento di stampa
+    motor.write(179);
     while(elapsedTime < duration) {
-      int val = analogRead(POT_PIN); 
-      val = map(val, 0, 1023, 0, 179); // mappo il valore letto dal pot. nell’intervallo 0-179 gradi
-      motor.write(val);
       elapsedTime = millis() - startTime; // Calcola il tempo trascorso
       unsigned long currentTime = millis(); // Ottieni il tempo corrente
       if (currentTime - lastPrintTime >= 1000) {
@@ -115,6 +112,7 @@ void loop() {
         lastPrintTime = currentTime; // Aggiorna l'ultimo momento di stampa
       }    
     }
+    motor.write(89);
     Serial.println("Tempo scaduto!");
     return;
   }
