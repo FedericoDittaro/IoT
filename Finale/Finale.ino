@@ -13,8 +13,7 @@
 SoftwareSerial sensorSerial(SENSOR_TX_PIN, SENSOR_RX_PIN);
 Adafruit_Fingerprint finger = Adafruit_Fingerprint(&sensorSerial);
  
-int greenLed = LOW;
-Servo motor;
+Servo myservo;
 
 unsigned long startTime;  // Tempo di inizio
 unsigned long elapsedTime; // Tempo trascorso in millisecondi
@@ -26,12 +25,9 @@ void setup() {
   pinMode(RED_LED_PIN, OUTPUT);
   pinMode(GREEN_LED_PIN, OUTPUT);
   pinMode(BUZZ_PIN, OUTPUT);
-  motor.attach(MOTOR_PIN);
+  myservo.attach(MOTOR_PIN);
   Serial.begin(SERIAL_SPEED);
-  delay(1000);
-  Serial.begin(9600);
   finger.begin(57600);
-  delay(100);
   if (!finger.verifyPassword()) {
     Serial.println("Errore: sensore non trovato!");
     digitalWrite(RED_LED_PIN, HIGH);
@@ -76,7 +72,7 @@ void loop() {
       Serial.println("Errore: comando non valido!");
       Serial.println();
     }
-
+    return;
   }
 
   if (choose == 2) {
@@ -92,16 +88,13 @@ void loop() {
       return;
     }
   
-    greenLed = !greenLed;
     digitalWrite(GREEN_LED_PIN, HIGH);
     playSuccessSound();
-    delay(100);
     digitalWrite(GREEN_LED_PIN, LOW);
-    delay(100);
     Serial.println("Hai a disposizione 20 secondi");
     startTime = millis(); // Imposta il tempo di inizio
     lastPrintTime = millis();   // Imposta l'ultimo momento di stampa
-    motor.write(179);
+    myservo.write(140);
     while(elapsedTime < duration) {
       elapsedTime = millis() - startTime; // Calcola il tempo trascorso
       unsigned long currentTime = millis(); // Ottieni il tempo corrente
@@ -112,8 +105,10 @@ void loop() {
         lastPrintTime = currentTime; // Aggiorna l'ultimo momento di stampa
       }    
     }
-    motor.write(89);
+    myservo.write(89);
+    playSuccessSound();
     Serial.println("Tempo scaduto!");
+    elapsedTime = 0;
     return;
   }
 }
@@ -221,7 +216,6 @@ void playErrorSound() {
   tone(BUZZ_PIN, NOTE_A1, 200); // Genera un suono a 1000Hz per 200ms (0,2 secondi)
   delay(250); // Pausa di 500ms (0,5 secondi) tra i suoni
   tone(BUZZ_PIN, NOTE_A1, 200);
-  delay(500);
 }
 
 void playSuccessSound() {
@@ -232,16 +226,10 @@ void playSuccessSound() {
 
 void error() {
   Serial.println("Impronta non riconosciuta");
-  
+  digitalWrite(RED_LED_PIN, HIGH);
   playErrorSound();
-  for (int i = 0; i < 3; i++) {
-    digitalWrite(RED_LED_PIN, HIGH);
-    delay(100);
-    digitalWrite(RED_LED_PIN, LOW);
-    delay(100);
-  }
-  while (digitalRead(SENSOR_TOUCH_PIN));
-  delay(200);
+  delay(100);
+  digitalWrite(RED_LED_PIN, LOW);
 }
 
   
