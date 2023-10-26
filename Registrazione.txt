@@ -1,0 +1,145 @@
+#include <Adafruit_Fingerprint.h>
+#define SENSOR_TX_PIN 4
+#define SENSOR_RX_PIN 3
+#define SENSOR_TOUCH_PIN 2
+#define SERIAL_SPEED 9600
+
+SoftwareSerial sensorSerial(SENSOR_TX_PIN, SENSOR_RX_PIN);
+Adafruit_Fingerprint finger = Adafruit_Fingerprint(&sensorSerial);
+
+void setup() {
+    pinMode(SENSOR_TOUCH_PIN, INPUT);
+    Serial.begin(SERIAL_SPEED);
+    finger.begin(57600);
+
+    if (!finger.verifyPassword()) {
+        Serial.println("Errore: sensore non trovato!");
+        while (true);
+  }
+}
+
+void loop {
+    printStoredFingerprints();
+
+    Serial.println("Seleziona l'azione da eseguire:");
+    Serial.println(" -> numero da 1 a 127 per inserire");
+    Serial.println(" -> numero da -1 a -127 per rimuovere");
+    Serial.println(" -> x per svuotare tutto");
+    Serial.println();
+    while (!Serial.available());
+    String input = Serial.readStringUntil('\n');
+
+    if (input == "x") {
+      removeAllFingerprints();
+      return;
+    }
+
+    int location = input.toInt();
+    if (location > 0 && location < 128) {
+      saveFingerprint(location);
+    } else if (location < 0 && location > -128) {
+      removeFingerprint(-location);
+    } else {
+      Serial.println("Errore: comando non valido!");
+      Serial.println();
+    }
+    return;
+}
+
+void printStoredFingerprints() {
+  finger.getTemplateCount();
+  if (finger.templateCount == 0) {
+    Serial.println("Nessuna impronta registrata");
+    Serial.println();
+  } else {
+    if (finger.templateCount == 1) {
+      Serial.println("Un’impronta registrata");
+    } else {
+      Serial.println(String(finger.templateCount) + " impronte registrate");
+    }
+    
+    String locations = "";
+    for (uint16_t i = 1; i <= 127; i++) {
+      if (finger.loadModel(i) == FINGERPRINT_OK) {
+        locations += String(i) + ", ";
+      }
+    }
+    locations = locations.substring(0, locations.length() - 2);
+    Serial.println("Posizioni occupate: " + locations);
+    Serial.println();
+  }
+}
+
+void removeAllFingerprints() {
+  if (finger.emptyDatabase() != FINGERPRINT_OK) {
+    Serial.println("Errore: impossibile svuotare le impronte");
+    Serial.println();
+    return;
+  }
+  Serial.println("Tutte le impronte sono state cancellate");
+  Serial.println();
+}
+
+void saveFingerprint(uint16_t location) {
+  Serial.println("Posiziona il dito");
+  while (!digitalRead(SENSOR_TOUCH_PIN));
+  
+  if (scanFingerprint(1) != FINGERPRINT_OK) {
+    Serial.println("Errore: scansione non riuscita");
+    Serial.println();
+    return;
+  }
+ 
+  Serial.println("Rimuovi il dito");
+  while (digitalRead(SENSOR_TOUCH_PIN));
+  delay(200);
+ 
+  Serial.println("Posiziona di nuovo lo stesso dito");
+  while (!digitalRead(SENSOR_TOUCH_PIN));
+  if (scanFingerprint(2) != FINGERPRINT_OK) {
+    Serial.println("Errore: scansione non riuscita");
+    Serial.println();
+    return;
+  }
+ 
+  if (finger.createModel() != FINGERPRINT_OK) {
+    Serial.println("Errore: impossibile creare il modello");
+    Serial.println();
+    return;
+  }
+ 
+  if (finger.storeModel(location) != FINGERPRINT_OK) {
+    Serial.println("Errore: impossibile salvare il modello");
+    Serial.println();
+    return;
+  }
+ 
+  Serial.println("L'impronta (#" + String(location) + ") è stata salvata");
+  Serial.println();
+}
+
+void removeFingerprint(uint16_t location) {
+  if (finger.deleteModel(location) != FINGERPRINT_OK) {
+    Serial.print("Errore: impossibile svuotare la posizione #");
+    Serial.println(location);
+    Serial.println();
+    return;
+  }
+  
+  Serial.println("L'impronta (#" + String(location) + ") è stata eliminata");
+  Serial.println();
+}
+
+uint8_t scanFingerprint(uint8_t slot) {
+  uint8_t status;
+ 
+  do {
+    status = finger.getImage();
+  } while (status == FINGERPRINT_NOFINGER);
+ 
+  if (status != FINGERPRINT_OK) {
+    return status;
+  }
+ 
+  return finger.image2Tz(slot);
+}

@@ -1,0 +1,35 @@
+#include <Servo.h>
+#include "pitches.h"
+#define MOTOR_PIN 7
+
+Servo myservo;
+
+unsigned long startTime;  // Tempo di inizio
+unsigned long elapsedTime; // Tempo trascorso in millisecondi
+const unsigned long duration = 20000; // Durata desiderata in millisecondi (20 secondi)
+unsigned long lastPrintTime;  // Ultimo momento in cui è stato stampato il tempo
+
+void setup(){
+    myservo.attach(MOTOR_PIN);
+}
+
+void loop(){
+    Serial.println("Hai a disposizione 20 secondi");
+    startTime = millis(); // Imposta il tempo di inizio
+    lastPrintTime = millis();   // Imposta l'ultimo momento di stampa
+    myservo.write(140);
+    while(elapsedTime < duration) {
+      elapsedTime = millis() - startTime; // Calcola il tempo trascorso
+      unsigned long currentTime = millis(); // Ottieni il tempo corrente
+      if (currentTime - lastPrintTime >= 1000) {
+        Serial.print("Tempo trascorso: ");
+        Serial.print(elapsedTime / 1000); // Converte in secondi
+        Serial.println(" secondi");
+        lastPrintTime = currentTime; // Aggiorna l'ultimo momento di stampa
+      }    
+    }
+    myservo.write(89);
+    playSuccessSound();
+    Serial.println("Tempo scaduto!");
+    elapsedTime = 0;
+}

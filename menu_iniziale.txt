@@ -1,0 +1,19 @@
+void loop() {
+  Serial.println("Seleziona l'azione da eseguire:");
+  Serial.println(" -> 1: Inserisci o elimina impronta");
+  Serial.println(" -> 2: Verifica impronta");
+
+  Serial.println();
+  while (!Serial.available());
+  String command = Serial.readStringUntil('\n');
+
+  int choose = command.toInt();
+
+  if(choose == 1) {
+    ...
+  }
+
+  if(choose == 2){
+    ...
+  }
+}
