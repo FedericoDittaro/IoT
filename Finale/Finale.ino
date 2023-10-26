@@ -231,5 +231,3 @@ void error() {
   delay(100);
   digitalWrite(RED_LED_PIN, LOW);
 }
-
-  

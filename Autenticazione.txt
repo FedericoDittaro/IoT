@@ -11,51 +11,36 @@ void setup() {
   myservo.attach(MOTOR_PIN);
 }
 
-if (choose == 2) {
-    Serial.println("Posiziona il dito sul sensore");
-    while (!digitalRead(SENSOR_TOUCH_PIN));
-    if (scanFingerprint(1) != FINGERPRINT_OK) {
-      error();
-      return;
-    }
-  
-    if (finger.fingerSearch() != FINGERPRINT_OK) {
-      error();
-      return;
-    }
-
 void loop() {
-  
-    Serial.println("Posiziona il dito sul sensore");
-    while (!digitalRead(SENSOR_TOUCH_PIN));
-    if (scanFingerprint(1) != FINGERPRINT_OK) {
-      error();
-      return;
-    }
-  
-    if (finger.fingerSearch() != FINGERPRINT_OK) {
-      error();
-      return;
-    }
 
-    digitalWrite(GREEN_LED_PIN, HIGH);
-    playSuccessSound();
-    digitalWrite(GREEN_LED_PIN, LOW);
+  Serial.println("Posiziona il dito sul sensore");
+  while (!digitalRead(SENSOR_TOUCH_PIN));
+  if (scanFingerprint(1) != FINGERPRINT_OK) {
+    error();
     return;
   }
+
+  if (finger.fingerSearch() != FINGERPRINT_OK) {
+    error();
+    return;
+  }
+
+  digitalWrite(GREEN_LED_PIN, HIGH);
+  playSuccessSound();
+  digitalWrite(GREEN_LED_PIN, LOW);
+  return;
 }
 
 void playErrorSound() {
-  // Genera il suono di errore
-  tone(BUZZ_PIN, NOTE_A1, 200); // Genera un suono a 1000Hz per 200ms (0,2 secondi)
-  delay(250); // Pausa di 500ms (0,5 secondi) tra i suoni
-  tone(BUZZ_PIN, NOTE_A1, 200);
+// Genera il suono di errore
+tone(BUZZ_PIN, NOTE_A1, 200); // Genera un suono a 1000Hz per 200ms (0,2 secondi)
+delay(250); // Pausa di 500ms (0,5 secondi) tra i suoni
+tone(BUZZ_PIN, NOTE_A1, 200);
 }
 
 void playSuccessSound() {
-  // Genera il suono di errore
   tone(BUZZ_PIN, NOTE_G4, 500); // Genera un suono a 1000Hz per 200ms (0,2 secondi)
-  delay(250); // Pausa di 500ms (0,5 secondi) tra i suoni
+  delay(250);
 }
 
 void error() {
